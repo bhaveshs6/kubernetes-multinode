@@ -1,0 +1,16 @@
+---
+# vars file for ec2-provision
+x:
+                  - name: k8s-master
+                  - name: k8s-worker-1
+                  - name: k8s-worker-2
+
+image: ami-0bcf5425cdc1d8a85
+
+region: ap-south-1
+
+sec_group: launch-wizard-1
+
+instance_type: t2.micro
+
+key_name: mykey

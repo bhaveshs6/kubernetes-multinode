@@ -1,0 +1,7 @@
+---
+# handlers file for docker-conf
+- name: Start Docker
+  service:
+          name: docker
+          state: restarted
+          enabled: yes

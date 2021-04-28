@@ -1,0 +1,6 @@
+
+- hosts: tag_Cluster_Kubernetes
+  become: yes
+  roles:
+          - docker-conf
+

@@ -1,0 +1,4 @@
+---
+# vars file for docker-conf
+base_url: https://download.docker.com/linux/centos/$releasever/$basearch/stable
+gpg_key: https://download.docker.com/linux/centos/gpg

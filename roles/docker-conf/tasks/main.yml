@@ -1,0 +1,28 @@
+---
+# tasks file for docker-conf
+#- name: add docker repository
+#  yum_repository:
+#          name: docker_repo
+#          description: Docker YUM Repo
+#          file: ansible_repos
+#          baseurl: "{{ base_url }}"
+#          gpgcheck: yes
+#          gpgkey: "{{ gpg_key }}"
+#          enabled: yes
+- name: install python and docker
+  package:
+          name:
+                  - python3.7
+                  - docker
+          state: present
+  notify: Start Docker
+- name: Upgrade pip
+  command: pip3 install --upgrade pip
+  ignore_errors: yes
+- name: install docker sdk
+  become: no
+  pip:
+          executable: pip3
+          name: docker-py
+          state: present
+  notify: Start Docker
