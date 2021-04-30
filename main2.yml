@@ -3,4 +3,11 @@
   become: yes
   roles:
           - docker-conf
-
+- hosts: tag_Node_master
+  become: yes
+  roles:
+          - k8s-master
+- hosts: tag_Node_worker
+  become: yes
+  roles:
+          - k8s-worker
