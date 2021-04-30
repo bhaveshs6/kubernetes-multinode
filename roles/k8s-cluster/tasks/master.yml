@@ -1,0 +1,34 @@
+- name: kubeadm init
+  shell: "set -o pipefail && kubeadm init --pod-network-cidr=10.240.0.0/16  --ignore-preflight-errors=NumCPU --ignore-preflight-errors=Mem 2> /dev/null | tail -n 2"
+  args:
+         creates: /etc/kubernetes/admin.conf
+  register: z
+  notify: apply flannel
+
+- name: Get previous output
+  debug:
+         var: z
+
+- name: Get token
+  copy:
+         content: "{{ z.stdout }}"
+         dest: /tmp/token
+  delegate_to: localhost
+
+- name: Create ~/.kube directory
+  file:
+         name: ~/.kube
+         state: directory
+
+- name: Copy /etc/kubernetes/admin.conf to ~/.kube/config
+  copy:
+         src: /etc/kubernetes/admin.conf
+         dest: ~/.kube/config
+         remote_src: yes
+         owner: root
+         group: root
+         
+- name: Copy flannel yaml file to node
+  copy:
+         src: kube-flannel.yml
+         dest: ~/kube-flannel.yml

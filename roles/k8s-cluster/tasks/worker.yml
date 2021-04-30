@@ -1,0 +1,5 @@
+- name: Copy join command
+  copy:
+          src: /tmp/token
+          dest: /tmp/token
+  notify: Run join command
