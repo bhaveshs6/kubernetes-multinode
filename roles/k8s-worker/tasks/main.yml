@@ -1,2 +1,52 @@
 ---
-# tasks file for k8s-worker
+# tasks file for k8s-master
+- name: Add kubernetes YUM repositoy
+  yum_repository:
+        name: Kubernetes
+        baseurl: "https://packages.cloud.google.com/yum/repos/kubernetes-el7-$basearch"
+        enabled: yes
+        gpgcheck: yes
+        repo_gpgcheck: yes
+        gpgkey: "https://packages.cloud.google.com/yum/doc/yum-key.gpg https://packages.cloud.google.com/yum/doc/rpm-package-key.gpg"
+        description: Kubernetes Repository
+- name: Install kubeadm, kubectl, kubelet and iproute-tc packages
+  package:
+         name:
+                - kubelet
+                - kubeadm
+                - kubectl
+                - iproute-tc
+         state: present
+- name: Start kubelet service
+  service:
+         name: kubelet
+         state: started
+         enabled: yes
+- name: Check if k8s images are present
+  shell: "docker images | grep k8s | wc -l"
+  register: x
+- name: Pull k8s images
+  command: kubeadm config images pull
+  when: 'x.stdout != "7"'
+- name: Change Docker cgroupdriver to systemd
+  copy:
+         content: >
+                  {
+                            "exec-opts": ["native.cgroupdriver=systemd"]
+                  }
+         dest: /etc/docker/daemon.json
+  register: y
+- name: Restart docker service
+  service:
+         name: docker
+         state: restarted
+  when: y.changed is true
+- name: Set bridge-nf-call-iptables to 1
+  shell: 'echo "1" >> /proc/sys/net/bridge/bridge-nf-call-iptables'
+  changed_when: false
+- name: Copy join command
+  copy:
+          src: /tmp/token
+          dest: /tmp/token
+- name: Run join command
+  command: bash /tmp/token

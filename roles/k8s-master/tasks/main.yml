@@ -1,2 +1,75 @@
 ---
 # tasks file for k8s-master
+- name: Add kubernetes YUM repositoy
+  yum_repository:
+        name: Kubernetes
+        baseurl: "https://packages.cloud.google.com/yum/repos/kubernetes-el7-$basearch"
+        enabled: yes
+        gpgcheck: yes
+        repo_gpgcheck: yes
+        gpgkey: "https://packages.cloud.google.com/yum/doc/yum-key.gpg https://packages.cloud.google.com/yum/doc/rpm-package-key.gpg"
+        description: Kubernetes Repository
+- name: Install kubeadm, kubectl, kubelet and iproute-tc packages
+  package:
+         name:
+                - kubelet
+                - kubeadm
+                - kubectl
+                - iproute-tc
+         state: present
+- name: Start kubelet service
+  service:
+         name: kubelet
+         state: started
+         enabled: yes
+- name: Check if k8s images are present
+  shell: "docker images | grep k8s | wc -l"
+  register: x
+- name: Pull k8s images
+  command: kubeadm config images pull
+  when: 'x.stdout != "7"'
+- name: Change Docker cgroupdriver to systemd
+  copy:
+         content: >
+                  {
+                            "exec-opts": ["native.cgroupdriver=systemd"]
+                  }
+         dest: /etc/docker/daemon.json
+  register: y
+- name: Restart docker service
+  service:
+         name: docker
+         state: restarted
+  when: y.changed is true
+- name: Set bridge-nf-call-iptables to 1
+  shell: 'echo "1" >> /proc/sys/net/bridge/bridge-nf-call-iptables'
+  changed_when: false
+- name: kubeadm init
+  shell: kubeadm init --pod-network-cidr=10.240.0.0/16  --ignore-preflight-errors=NumCPU --ignore-preflight-errors=Mem 2> /dev/null | tail -n 2
+  args:
+         creates: /etc/kubernetes/admin.conf
+  register: z
+  notify: apply flannel
+- name: Get previous output
+  debug:
+         var: z
+- name: Get token
+  local_action:
+         module: copy
+         content: "{{ z.stdout }}"
+         dest: /tmp/token
+- name: Create ~/.kube directory
+  file:
+         name: ~/.kube
+         state: directory
+- name: Copy /etc/kubernetes/admin.conf to ~/.kube/config
+  copy:
+         src: /etc/kubernetes/admin.conf
+         dest: ~/.kube/config
+         remote_src: yes
+         owner: root
+         group: root
+- name: Copy flannel yaml file to node
+  copy:
+         src: kube-flannel.yml
+         dest: ~/kube-flannel.yml

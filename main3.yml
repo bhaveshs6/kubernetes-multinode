@@ -46,10 +46,11 @@
             shell: 'echo "1" >> /proc/sys/net/bridge/bridge-nf-call-iptables'
             changed_when: false
           - name: kubeadm init
-            shell: kubeadm init --pod-network-cidr=10.240.0.0/16  --ignore-preflight-errors=NumCPU --ignore-preflight-errors=Mem 2> hi.txt | tail -n 2 && rm -rf hi.txt
+            shell: kubeadm init --pod-network-cidr=10.240.0.0/16  --ignore-preflight-errors=NumCPU --ignore-preflight-errors=Mem 2> /dev/null | tail -n 2
             args:
                     creates: /etc/kubernetes/admin.conf
             register: z
+            notify: apply flannel
           - name: Get previous output
             debug:
                   var: z
@@ -58,3 +59,21 @@
                   module: copy
                   content: "{{ z.stdout }}"
                   dest: /tmp/token
+          - name: Create ~/.kube directory
+            file:
+                    name: ~/.kube
+                    state: directory
+          - name: Copy /etc/kubernetes/admin.conf to ~/.kube/config
+            copy:
+                    src: /etc/kubernetes/admin.conf
+                    dest: ~/.kube/config
+                    remote_src: yes
+                    owner: root
+                    group: root
+          - name: Copy flannel yaml file to node
+            copy:
+                    src: kube-flannel.yml
+                    dest: ~/kube-flannel.yml
+  handlers:
+          - name: apply flannel
+            command: kubectl apply -f ~/kube-flannel.yml

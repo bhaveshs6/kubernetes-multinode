@@ -2,8 +2,11 @@
 # vars file for ec2-provision
 x:
                   - name: k8s-master
+                    node: master
                   - name: k8s-worker-1
+                    node: worker
                   - name: k8s-worker-2
+                    node: worker
 
 image: ami-0bcf5425cdc1d8a85
 
