@@ -13,16 +13,17 @@
   package:
           name:
                   - python3.7
+                  - python-devel
+                  - python-pip
                   - docker
           state: present
   notify: Start Docker
 - name: Upgrade pip
-  command: pip3 install --upgrade pip
-  ignore_errors: yes
+  command: pip install --upgrade pip
+  changed_when: false
 - name: install docker sdk
   become: no
   pip:
-          executable: pip3
           name: docker-py
           state: present
   notify: Start Docker

@@ -2,3 +2,6 @@
 # handlers file for k8s-master
 - name: apply flannel
   command: kubectl apply -f ~/kube-flannel.yml
+
+- name: Run join command
+  command: bash /tmp/token

@@ -1,5 +1,17 @@
 ---
 # tasks file for k8s-master
+- name: Change Docker cgroupdriver to systemd
+  copy:
+         content: >
+                  {
+                            "exec-opts": ["native.cgroupdriver=systemd"]
+                  }
+         dest: /etc/docker/daemon.json
+- name: Restart docker service
+  service:
+         name: docker
+         state: restarted
+  changed_when: false
 - name: Add kubernetes YUM repositoy
   yum_repository:
         name: Kubernetes
@@ -23,30 +35,19 @@
          state: started
          enabled: yes
 - name: Check if k8s images are present
-  shell: "docker images | grep k8s | wc -l"
+  shell: "set -o pipefail && docker images | grep k8s | wc -l"
+  ignore_errors: yes
+  changed_when: false
   register: x
 - name: Pull k8s images
   command: kubeadm config images pull
   when: 'x.stdout != "7"'
-- name: Change Docker cgroupdriver to systemd
-  copy:
-         content: >
-                  {
-                            "exec-opts": ["native.cgroupdriver=systemd"]
-                  }
-         dest: /etc/docker/daemon.json
-  register: y
-- name: Restart docker service
-  service:
-         name: docker
-         state: restarted
-  when: y.changed is true
 - name: Set bridge-nf-call-iptables to 1
   shell: 'echo "1" >> /proc/sys/net/bridge/bridge-nf-call-iptables'
   changed_when: false
-- name: Copy join command
-  copy:
-          src: /tmp/token
-          dest: /tmp/token
-- name: Run join command
-  command: bash /tmp/token
+- name: Configure Master
+  include_tasks: master.yml
+  when: inventory_hostname in groups["tag_Node_master"]
+- name: Configure Worker
+  include_tasks: worker.yml
+  when: inventory_hostname in groups["tag_Node_worker"]
